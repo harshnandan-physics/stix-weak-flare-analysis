@@ -11,6 +11,9 @@ __pycache__/
 build/
 dist/
 
+# --- copies ---
+flare_pipeline/flare_annotated_copy.py
+
 # --- Virtual environments ---
 .venv/
 venv/
