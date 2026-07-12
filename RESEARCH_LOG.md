@@ -96,3 +96,34 @@ Notebook 02 paper event cross-identification archived to
 is insufficient (catalog peak_UTC does not correspond to the paper's manually-identified
 tp). Closing conclusion cell added to the archived notebook. Will revisit with
 light-curve shape comparison as optional validation after pipeline is complete.
+
+---
+
+## 13 July 2026
+
+**Notebook cleanup and restructuring**
+- Notebook 02 (Paper Event Selection) archived to
+  `archive/ARCHIVED_Paper_Event_Matching_Attempt.ipynb`.
+  Closing conclusion cell added. Removed from active pipeline.
+- Remaining notebooks renumbered: 03 → 02 (Lightcurve Extraction),
+  04 → 03 (Event Characterization).
+- All three active notebooks fully restructured: proper markdown headers
+  (Objective, Inputs, Outputs, Scientific Milestone), section headings,
+  inline comments, and visualizations added.
+
+**Visualizations added**
+- Notebook 02: Raw SXR and HXR lightcurve with flare window highlighted.
+- Notebook 03: Background estimation windows overlaid on raw lightcurve.
+- Notebook 03: Background-subtracted SXR and HXR flux with t0 and tp marked.
+
+**Documentation**
+- PROJECT_ROADMAP.md fully revamped — notebook table renumbered, caveats
+  section added (HXR band substitution, fluence window pending), current
+  status updated.
+- RESEARCH_LOG.md brought up to date.
+- GitHub repository initialized and pushed.
+  github.com/harshnandan-physics/stix-weak-flare-analysis
+
+**Pending**
+- Supervisor confirmation on fluence integration window before implementing
+  `compute_fluence()`.
