@@ -58,7 +58,7 @@ def estimate_background(
         }
         One entry per band. Raises ValueError if no clean window is available.
     """
-    pad = pd.Timedelta(minutes=window_minutes)
+    pad = pd.Timedelta(minutes = window_minutes)
 
     # Pre-window is anchored to flare start and extends backward — it's the quiet stretch
     # leading up to the flare, so sampling should stop exactly where the flare begins.

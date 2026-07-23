@@ -1,102 +1,140 @@
-# HXR-rich Weak Solar Flares — STIX Pipeline
+# STIX Weak Flare Analysis
 
-Reproduction and extension of **Awasthi et al. (2021)**, analysing HXR-rich weak solar flares
-using data from the **Spectrometer/Telescope for Imaging X-rays (STIX)** aboard Solar Orbiter.
-
----
-
-## Project Objective
-
-Reproduce the main observational results of Awasthi et al. (2021) — starting with the paper's
-Figure 2 — and build a scalable, modular analysis pipeline for characterizing thousands of
-STIX solar flares. The pipeline will later be extended with additional physical parameters
-and machine learning for large-scale statistical analysis.
+Reproduction and extension of **Awasthi et al. (2021)** — *"Relative yield of thermal
+and nonthermal emission during weak flares observed by STIX during September 20–25, 2021"*
 
 ---
 
-## Repository Structure
+## Overview
+
+This project builds an automated pipeline to characterize the relative hard X-ray (HXR)
+and soft X-ray (SXR) yield across ~200 weak solar flares detected by the Spectrometer
+Telescope for Imaging X-rays (STIX) aboard Solar Orbiter. The core scientific quantity
+is the quotient factor:
 
 ```
-.
-├── data/                  # Raw and processed STIX catalog data (gitignored)
-├── docs/                  # Project documentation
-├── figures/                # Output plots (e.g. Figure 2 reproduction)
-├── flare_pipeline/         # Reusable pipeline modules
-│   ├── config.py           # Global constants (STIX energy bands, SXR/HXR band definitions)
-│   ├── data.py              # STIX flare catalog acquisition
-│   ├── lightcurves.py       # Light curve retrieval, parsing, flare-window extraction
-│   └── flare.py             # Flare event characterization (background, onset, peak)
-├── notebooks/               # Numbered notebooks for the scientific narrative
-│   ├── 01_STIX_Catalog.ipynb
-│   ├── 02_Lightcurve_Extraction.ipynb
-│   ├── 03_Event_Characterization.ipynb
-│   └── archive/              # Parked/exploratory work (e.g. paper event matching attempt)
-├── papers/                   # Reference papers (gitignored — not committed publicly)
-├── PROJECT_ROADMAP.md         # Phased scientific roadmap and current status
-├── RESEARCH_LOG.md             # Dated research log of progress, decisions, and bug fixes
-└── pyproject.toml               # Project dependencies
+qf = HXR_fluence / F_SXR(tp)
+```
+
+where HXR fluence is the time-integrated hard X-ray flux over the flare rise phase
+and F_SXR(tp) is the soft X-ray flux at the SXR peak time tp.
+
+The immediate goal is to reproduce Figure 2 of the paper. The longer-term goal is a
+scalable pipeline for statistical and machine-learning analysis of thousands of STIX flares.
+
+---
+
+## Data
+
+> ⚠️ **Pipeline currently transitioning from quicklook to spectrogram data.**
+> See PROJECT_ROADMAP.md for full transition status.
+
+| Property | Value |
+|----------|-------|
+| Instrument | STIX / Solar Orbiter |
+| Observation period | 2021-09-20 to 2021-09-25 |
+| Total catalog flares | 215 |
+| Flares with spectrogram coverage | 175 (173 after quality flags) |
+| SXR band | 4–10 keV |
+| HXR band | 12–25 keV (spectrogram; previously 15–25 keV quicklook proxy) |
+| Spectrogram cadence | 0.5 seconds |
+| Data source | STIX Data Center via `stixdcpy` |
+
+---
+
+## Project Structure
+
+```
+├── flare_pipeline/              # Reusable pipeline modules
+│   ├── config.py                # Global constants and energy band definitions
+│   ├── data.py                  # STIX catalog retrieval
+│   ├── lightcurves.py           # ⚠️ Quicklook-based — to be replaced by spectrogram.py
+│   ├── spectrogram.py           # ⬜ Not yet built — will replace lightcurves.py
+│   ├── flare.py                 # Flare characterization (background, onset, peak, fluence, qf)
+│   └── plotting.py              # ⬜ Standardized visualizations (not yet implemented)
+│
+├── notebooks/
+│   ├── 01_STIX_Catalog.ipynb            # ✅ Catalog retrieval and export
+│   ├── 02_Lightcurve_Extraction.ipynb   # ⚠️ Quicklook-based — will be rebuilt
+│   ├── 03_Event_Characterization.ipynb  # ⚠️ Quicklook-based — will be rebuilt
+│   └── [04–11 not yet created]
+│
+├── data/
+│   └── processed/
+│       └── stix_flare_catalog_sep20_25_2021.csv   # Canonical flare catalog (215 events)
+│
+├── archive/
+│   └── ARCHIVED_Paper_Event_Matching_Attempt.ipynb
+│
+├── PROJECT_ROADMAP.md
+├── RESEARCH_LOG.md
+└── README.md
 ```
 
 ---
 
-## Pipeline Overview
+## Pipeline Modules
 
-```
-Processed Catalog
-   → Select flare
-   → Download STIX light curve
-   → Parse to DataFrame
-   → Extract flare window
-   → Estimate background
-   → Find onset (t0) and peak (tp)
-   → [Next] Compute HXR fluence
-   → [Next] Compute qf
-```
+### `config.py`
+Central configuration. Defines energy band names and SXR/HXR band assignments.
+> ⚠️ Currently reflects quicklook 5-band structure. Will be updated with spectrogram
+> channel indices once confirmed.
 
----
+### `data.py`
+Retrieves the STIX flare catalog via `stixdcpy`. Unaffected by spectrogram transition.
 
-## Current Status
+### `lightcurves.py` ⚠️
+Quicklook lightcurve retrieval and parsing. **Will be replaced by `spectrogram.py`.**
 
-**Phase I — Paper Reproduction** (in progress)
-
-- [x] Retrieve STIX flare catalog (215 events, Sep 20–25 2021)
-- [x] Extract and standardize STIX light curves
-- [x] Estimate per-flare local background (`estimate_background()`)
-- [x] Characterize flare onset/peak times (`find_onset_peak()`)
-- [ ] Compute HXR fluence — *pending supervisor confirmation on integration window*
-- [ ] Compute qf
-- [ ] Reproduce paper's Figure 2
-
-See [`PROJECT_ROADMAP.md`](./PROJECT_ROADMAP.md) for the full phased roadmap and
-[`RESEARCH_LOG.md`](./RESEARCH_LOG.md) for a dated log of decisions and progress.
+### `flare.py`
+Flare characterization functions:
+- `estimate_background()` — local 5-minute pre/post quiet-time windows, contamination-checked
+- `find_onset_peak()` — 1σ onset detection per band, SXR peak time
+- `compute_fluence()` — ⬜ not yet implemented (pending spectrogram transition)
+- `compute_qf()` — ⬜ not yet implemented
 
 ---
 
-## Project Conventions
+## Conventions
 
-- The processed CSV catalog is canonical — notebooks load it rather than re-querying STIX.
-- All reusable logic lives in `flare_pipeline/`; notebooks handle scientific workflow only.
-- Background is estimated **locally** (per-flare quiet-time windows), not globally, since
-  quiet-Sun levels drift over an observation.
-- Energy band naming uses underscores (e.g. `4_10`, not `4-10`) throughout.
-- `flare_id` is cast to `str` immediately after any `pd.read_csv()` to avoid dtype drift.
-- Comments explain *why*, not *how*.
+- `flare_id` is always a string (cast after `pd.read_csv`)
+- Column names use underscores (`4_10`, not `4-10`)
+- Never mutate input DataFrames; always use `.copy()`
+- All reusable logic in `flare_pipeline/`; notebooks contain scientific workflow only
+- Use keyword arguments at call sites with 3+ parameters
+- Build and validate on a single test flare before scaling
+
+**Current test flare:** `2109250916` (B2.9, 2021-09-25 09:12–09:19 UTC, row 23 in catalog)
 
 ---
 
 ## Setup
 
 ```bash
-git clone <repo-url>
-cd <repo-name>
-pip install -e .
+conda activate astrophysics
+pip install stixdcpy
 ```
 
-Dependencies are managed via `pyproject.toml`.
+### Key dependencies
+- `stixdcpy` — STIX Data Center access
+- `pandas`, `numpy`, `matplotlib`
+
+---
+
+## Current Status
+
+**Phase I — Paper Reproduction, in progress.**
+
+The data layer is being transitioned from quicklook to spectrogram. Background estimation
+and onset/peak detection are implemented in `flare.py`; fluence and qf are pending.
+
+See `PROJECT_ROADMAP.md` for the full task list and `RESEARCH_LOG.md` for decision history.
 
 ---
 
 ## Reference
 
-Awasthi, A. K., et al. (2021). *[Paper title]*. Reference paper for this reproduction —
-see `papers/` (not tracked in this repository; obtain via journal access).
+Awasthi, A. K., Mrozek, T., Kołomański, S., Litwicka, M., Stęślicki, M., & Kułaga, K.
+(2021). *Relative yield of thermal and nonthermal emission during weak flares observed by
+STIX during September 20–25, 2021.* arXiv:2402.01936
+
